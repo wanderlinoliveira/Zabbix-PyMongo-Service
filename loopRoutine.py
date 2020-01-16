@@ -6,6 +6,16 @@ import time
 cliente = MongoClient('localhost', 27017)
 ids = cliente['IDS']
 inat = ids['inatividades']
+camCol = ids["cameras"]
+
+collist = ids.list_collection_names()
+print(collist)
+
+x = camCol.delete_many({})
+while( x.acknowledged == False  ):
+    x = camCol.delete_many({})
+    print("Unsuccessfully trying to delete cameras collection")
+print("Camera collection successfully deleted", x.deleted_count,"documents deleted.")
 
 result = Zabbix.getProject('SERGIPE')  # Returns the project's serviceid and its dependencies' serviceids 
 dependencies = result["dependencies"]
@@ -29,6 +39,13 @@ for host in hosts:
         camera["hostid"] = host["hostid"]
         cameras.append(camera)
         hostIds.append(host["hostid"])
+        cameraName = {}
+        cameraName["name"] = host["name"]
+        x = camCol.insert_one(cameraName)
+        while x.acknowledged == False:
+            print("FAIL TO SAVE", cameraNames)
+            x = camCol.insert_one(cameraNames)
+print("Cameras Saved On database")
 item = Zabbix.getItemsDataByHostIdsAndItemsName(hostIds, "Ping")
 
 itemDict = {}
