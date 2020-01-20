@@ -54,7 +54,7 @@ personalisedCameraName = "CAM57_OFICINA DE SOLDA"
 print(today)
 
 """       
-# *** Method #1 - Get certain cameras' data of defined time ***
+# *** Method #1 - Get certain cameras' data of a defined pareiod ***
  
 year = 2019
 month = 3
@@ -87,6 +87,7 @@ else:
 """
 
 # *** Method #2 - Get only part of cameras' data ***
+"""
 for each in item:
     oneItem = each["itemid"]
     if(cameraDict[personalisedCameraName] == oneItem):
@@ -121,6 +122,37 @@ for each in item:
                     print(itemDict[oneItem], datetime.fromtimestamp(init), datetime.fromtimestamp(end), "** " +  str(length) + " results")
                 else:
                     print(itemDict[oneItem], datetime.fromtimestamp(init), datetime.fromtimestamp(end), "There is no result for that")
+"""
+
+# *** Method #3 - Get all cameras data of a defined period ***
+year = 2020
+month = 1
+day = 19
+
+init = int(datetime(year, month, day).timestamp())
+end = int(datetime(year, month, day + 1).timestamp() -1)
+
+for each in item:
+    oneItem = each["itemid"] 
+    result = Zabbix.getHistoryByItemId(oneItem, init, end)
+    length = len(result)
+    if result:
+        for data in result:
+            dt = data
+            value = data["value"]
+            databasefile = {}
+            dataBaseCounter = dataBaseCounter + 1
+            databasefile["camera"] = itemDict[oneItem]
+            databasefile["date"] = int(data["clock"])
+            databasefile["value"] = int(  float(data["value"])   )
+            x = inat.insert_one(databasefile)
+            while x.acknowledged == False:
+                print("FAIL TO SAVE",databasefile)
+                x = inat.insert_one(databasefile)
+        print(itemDict[oneItem], datetime.fromtimestamp(init), datetime.fromtimestamp(end), "** " +  str(length) + " results")
+    else:
+        print(itemDict[oneItem], datetime.fromtimestamp(init), datetime.fromtimestamp(end), "There is no result for that")
+
 
 print(dataBaseCounter, "files saved on mongo")
 
