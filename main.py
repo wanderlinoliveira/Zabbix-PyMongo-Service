@@ -10,13 +10,13 @@ camCol = ids["cameras"]
 
 collist = ids.list_collection_names()
 print(collist)
-
+"""
 x = camCol.delete_many({})
 while( x.acknowledged == False  ):
     x = camCol.delete_many({})
     print("Unsuccessfully trying to delete cameras collection")
 print("Camera collection successfully deleted", x.deleted_count,"documents deleted.")
-
+"""
 
 """
 camera -> nome, log{message, date}, history[{date, value}]
@@ -50,13 +50,15 @@ for host in hosts:
         camera["hostid"] = host["hostid"]
         cameras.append(camera)
         hostIds.append(host["hostid"])
+        """
         cameraName = {}
         cameraName["name"] = host["name"]
         x = camCol.insert_one(cameraName)
         while x.acknowledged == False:
             print("FAIL TO SAVE", cameraNames)
             x = camCol.insert_one(cameraNames)
-print("Cameras Saved On database")
+        """
+#print("Cameras Saved On database")
 item = Zabbix.getItemsDataByHostIdsAndItemsName(hostIds, "Ping")
 
 dataBaseCounter = 0
