@@ -11,55 +11,66 @@ camCol = ids["cameras"]
 collist = ids.list_collection_names()
 print(collist)
 
-x = camCol.delete_many({})
-while( x.acknowledged == False  ):
-    x = camCol.delete_many({})
-    print("Unsuccessfully trying to delete cameras collection")
-print("Camera collection successfully deleted", x.deleted_count,"documents deleted.")
-
-result = Zabbix.getProject('SERGIPE')  # Returns the project's serviceid and its dependencies' serviceids 
-dependencies = result["dependencies"]
-
-serviceids = []
-for device in dependencies:
-    serviceids.append(device["serviceid"])
-result = Zabbix.getServiceDataByServiceIds(serviceids) # Returns the name of the cameras that has these serviceids
-
-hostsNames = []
-for device in result:
-    hostsNames.append(device["name"])
-hosts = Zabbix.getHostsDataByHostNames(hostsNames)
-
-hostIds = []
-cameras = []
-for host in hosts:
-    if host["status"] == '0':
-        camera = {}
-        camera["name"] = host["name"]
-        camera["hostid"] = host["hostid"]
-        cameras.append(camera)
-        hostIds.append(host["hostid"])
-        cameraName = {}
-        cameraName["name"] = host["name"]
-        x = camCol.insert_one(cameraName)
-        while x.acknowledged == False:
-            print("FAIL TO SAVE", cameraNames)
-            x = camCol.insert_one(cameraNames)
-print("Cameras Saved On database")
-item = Zabbix.getItemsDataByHostIdsAndItemsName(hostIds, "Ping")
-
-itemDict = {}
-
-for each in item:
-    for camera in cameras:
-        if camera["hostid"] == each["hostid"]:
-            camera["itemid"] = each["itemid"]
-            itemDict[  each["itemid"]  ]  =  camera["name"]    
-
-def updateYesterdayData(itemDict):
+def updateYesterdayData(REGIAO, HOUR):
   now = datetime.now()
   currentHour = now.hour
-  if currentHour == 2: #2
+  cameraPromblems = {}
+  if currentHour == HOUR:
+    print("Saving", REGIAO)
+    for x in camCol.find():
+        if(x.get("problem")): 
+            cameraPromblems[x["name"]] = x["problem"]
+    deletequery = { "regiao": REGIAO }
+    x = camCol.delete_many(deletequery)
+    while( x.acknowledged == False  ):
+        x = camCol.delete_many({})
+        print("Unsuccessfully trying to delete cameras collection")
+    print("Camera collection successfully deleted", x.deleted_count,"documents deleted.")
+    
+    result = Zabbix.getProject(REGIAO)  # Returns the project's serviceid and its dependencies' serviceids 
+    dependencies = result["dependencies"]
+
+    serviceids = []
+    for device in dependencies:
+        serviceids.append(device["serviceid"])
+    result = Zabbix.getServiceDataByServiceIds(serviceids) # Returns the name of the cameras that has these serviceids
+
+    hostsNames = []
+    for device in result:
+        hostsNames.append(device["name"])
+    hosts = Zabbix.getHostsDataByHostNames(hostsNames)
+
+    hostIds = []
+    cameras = []
+    for host in hosts:
+        if host["status"] == '0':
+            camera = {}
+            camera["name"] = host["name"]
+            camera["hostid"] = host["hostid"]
+            cameras.append(camera)
+            hostIds.append(host["hostid"])
+            cameraName = {}
+            cameraName["name"] = host["name"]
+            cameraName["regiao"] = REGIAO
+            if(host["name"] in cameraPromblems):
+                cameraName["problem"] = cameraPromblems[host["name"]]
+            x = camCol.insert_one(cameraName)
+            while x.acknowledged == False:
+                print("FAIL TO SAVE", cameraNames)
+                x = camCol.insert_one(cameraNames)
+    print("Cameras Saved On database")
+    item = Zabbix.getItemsDataByHostIdsAndItemsName(hostIds, "Ping")
+
+    itemDict = {}
+
+    for each in item:
+        for camera in cameras:
+            if camera["hostid"] == each["hostid"]:
+                camera["itemid"] = each["itemid"]
+                itemDict[  each["itemid"]  ]  =  camera["name"]    
+    
+    # Start saving history
+    
     today = datetime.now()
     print(today)
     dataBaseCounter = 0
@@ -95,9 +106,12 @@ def updateYesterdayData(itemDict):
     endOfSave = datetime.now()
     timexecuting = endOfSave - today
     print(timexecuting)
-
+    
+    
 while(1):
-  updateYesterdayData(itemDict)
+  updateYesterdayData("SERGIPE", 2)
+  updateYesterdayData("TECARMO", 3)
+  updateYesterdayData("RUA ACRE", 4)
   now = datetime.now()
   print(now, "Waiting Update Time")
   time.sleep(60*60) #60*60
