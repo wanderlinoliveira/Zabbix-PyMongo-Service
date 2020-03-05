@@ -78,7 +78,8 @@ def updateYesterdayData(REGIAO, HOUR):
     month = now.month
     day = now.day
     end = datetime(year, month, day).timestamp() - 1
-    init = end - 86400 + 1
+    N = 1 #Number of days ago
+    init = end - 86400*N + 1
     print( "From", datetime.fromtimestamp(init)   )
     print( "To", datetime.fromtimestamp(end)   )   
     for each in item:
